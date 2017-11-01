@@ -1,0 +1,5 @@
+.deployment
+account
+db.json
+deploy.sh
+node_modules
