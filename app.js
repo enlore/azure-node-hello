@@ -2,6 +2,7 @@ const { resolve } = require('path')
 
 const exp = require('express')
 const app = exp()
+const bod = require('body-parser')
 
 const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
@@ -27,6 +28,8 @@ db.defaults({
 
 const port = process.env.PORT || 8080
 
+app.use(bod.json())
+
 app.get('/', (req, res) => {
   return res.sendFile(resolve(__dirname, 'client', 'index.html'))
 })
@@ -37,7 +40,7 @@ app.get('/api/restaurants', (req, res) => {
 })
 
 app.post('/api/restaurants', (req, res) => {
-  let ro = db._.pick(req.query, [
+  let ro = db._.pick(req.body, [
     'name',
     'address',
     'tags'
@@ -55,9 +58,9 @@ app.post('/api/restaurants', (req, res) => {
   console.info(ro)
 
   let r = new Restaurant({
-    name: ro.name || 'Wild Cow',
-    tags: ro.rags || ['vegetarian', 'vegan', 'hail seitan'],
-    address: ro.address || 'Somewhere on Eastland'
+    name: ro.name,
+    address: ro.address,
+    tags: ro.rags || []
   })
 
   r.save(db)

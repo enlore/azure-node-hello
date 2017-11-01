@@ -10,6 +10,7 @@
     "start:dev": "nodemon app.js -i db.json"
   },
   "dependencies": {
+    "body-parser": "^1.18.2",
     "express": "^4.16.2",
     "lowdb": "^1.0.0",
     "uuid": "^3.1.0"
