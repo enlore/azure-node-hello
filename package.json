@@ -1,7 +1,7 @@
 {
   "name": "lab.nodeHello",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "app.js",
   "license": "MIT",
   "engines": {
     "node": "6.9.1"

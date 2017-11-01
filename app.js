@@ -7,8 +7,6 @@ app.get('/', (req, res) => {
   return res.json({ msg: 'hello' })
 })
 
-module.exports = function run () {
-  app.listen(port, () => {
-    console.info(`>>>>>> Listening on ${port}`)
-  })
-}
+app.listen(port, () => {
+  console.info(`>>>>>> Listening on ${port}`)
+})
