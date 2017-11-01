@@ -154,6 +154,10 @@ ipaddr.js@1.5.2:
   version "1.5.2"
   resolved "https://registry.yarnpkg.com/ipaddr.js/-/ipaddr.js-1.5.2.tgz#d4b505bde9946987ccf0fc58d9010ff9607e3fa0"
 
+low@^0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/low/-/low-0.0.1.tgz#e631bf0f4d1784e824750e60c820b1e0f4ef29b5"
+
 media-typer@0.3.0:
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/media-typer/-/media-typer-0.3.0.tgz#8710d7af0aa626f8fffa1ce00168545263255748"
