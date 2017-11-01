@@ -6,8 +6,14 @@
   "engines": {
     "node": "6"
   },
+  "scripts": {
+    "start:dev": "nodemon app.js -i db.json"
+  },
   "dependencies": {
     "express": "^4.16.2",
     "lowdb": "^1.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.12.1"
   }
 }
