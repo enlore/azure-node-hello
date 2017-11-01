@@ -1,3 +1,5 @@
+const { resolve } = require('path')
+
 const exp = require('express')
 const app = exp()
 
@@ -26,11 +28,15 @@ db.defaults({
 const port = process.env.PORT || 8080
 
 app.get('/', (req, res) => {
+  return res.sendFile(resolve(__dirname, 'client', 'index.html'))
+})
+
+app.get('/api/restaurants', (req, res) => {
   const restaurants = db.get('restaurants').value()
   return res.json({ msg: 'hello', restaurants })
 })
 
-app.get('/api/restaurants', (req, res) => {
+app.post('/api/restaurants', (req, res) => {
   let ro = db._.pick(req.query, [
     'name',
     'address',
