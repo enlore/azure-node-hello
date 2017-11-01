@@ -1,2 +1,2 @@
-const app = require('./app')
-app.run()
+const run = require('./app')
+run()
