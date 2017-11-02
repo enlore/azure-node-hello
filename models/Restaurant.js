@@ -9,6 +9,17 @@ function Restaurant (opts) {
   this.address = opts.address || ""
   this.images  = opts.images || []
   this.tags    = opts.tags || []
+  // 1..5
+  this.ratings = opts.ratings || []
+
+  Object.defineProperty(this, 'avgRating', {
+    get: function () {
+      return Math.floor(
+        this.ratings.reduce((acc, rating) => acc + rating, 0)
+        / this.ratings.length
+      )
+    }
+  })
 }
 
 Restaurant.prototype.save = function save (db) {

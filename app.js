@@ -53,14 +53,12 @@ app.post('/api/restaurants', (req, res) => {
     })
   }
 
-  ro.tags = ro.tags && ro.tags.split(',') || []
-
   console.info(ro)
 
   let r = new Restaurant({
     name: ro.name,
     address: ro.address,
-    tags: ro.rags || []
+    tags: ro.tags
   })
 
   r.save(db)

@@ -13,13 +13,21 @@
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
         <style>
-          html, body { font-family: sans-serif; }
+          * { box-sizing: border-box; }
+          html, body { font-family: sans-serif; background-color: #fcfcff; }
           label, input { display: block; }
-          input { width: 100%; }
-          .restaurantForm {
-            max-width: 600px;
-            padding: 8px;
-          }
+          input { width: 100%;  max-width: 100%; border: 0; border-bottom: 1px solid #f4f2f2; }
+          label + input { margin-top: 6px; }
+          button { border: 0; border-bottom: 1px solid lightgrey; display: inline-block; padding: 6px 12px; }
+          .t-center { text-align: center; }
+          .u-center { margin: 0 auto; display: block; }
+          .c-card { max-width: 600px; padding: 8px; border-radius: 2px; background-color: #fff; box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);}
+          .controlGroup { margin-top: 8px; }
+          .restaurantsApp { padding: 24px 8px 16px 8px; }
+          .restaurantForm { padding: 12px; }
+          .restaurant { margin-top: 16px; }
+          .tagSearch { margin-top: 16px; border: 0; }
+          .fud { color: rgba(245, 242, 242, 0.4); font-size: 128px; position: fixed; top: 12px; left: 32px; pointer-events: none; }
         </style>
     </head>
 
@@ -29,15 +37,40 @@
         <![endif]-->
 
         <!-- Add your site or application content here -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.0.4/fuse.min.js"></script>
         <script src="https://unpkg.com/vue@2.5.2/dist/vue.js"></script>
-
         <div id="app"></div>
+        <h1 class="fud"> füd </h1>
 
         <script id="template-app-root" type="text/x-template">
-          <div class="restaurants-app">
-            <h1> Hello </h1>
-            <restaurant-form></restaurant-form>
+          <div class="restaurantsApp">
+
+            <restaurant-form class="c-card u-center"
+              @submit-restaurant="doSubmit">
+            </restaurant-form>
+
+            <input type="search" placeholder="filter by tag" class="tagSearch c-card u-center" v-model="searchTerm" />
+
+            <div class="restaurants"  v-if="filtered.length">
+              <restaurant v-for="res in filtered"
+                :address="res.address"
+                :tags="res.tags"
+                :name="res.name"
+                :key="res.id">
+              </restaurant>
+            </div>
+
+            <p v-else class="u-hint t-center"> um </p>
           </div>
+        </script>
+
+        <script id="template-restaurant" type="text/x-template">
+            <div class="restaurant u-center c-card">
+              <h3 class="restaurant-name">{{ name }}</h3>
+              <p class="restaurant-address">{{ address }}</p>
+              <p class="restaurant-tags">{{ tags }}</p>
+              <p class="restaurant-tags">{{ avgRating }}</p>
+            </div>
         </script>
 
         <script id="template-post-restaurant" type="text/x-template">
@@ -70,21 +103,67 @@
             template: '#template-app-root',
 
             data: {
-              restaurants: null
+              searchEngine: null,
+              restaurants: [],
+              searchTerm: ''
+            },
+
+            computed: {
+              filtered: function () {
+                return (this.searchTerm === "")
+                  ? this.restaurants
+                  : this.searchEngine.search(this.searchTerm)
+              }
+            },
+            methods: {
+              doSubmit: function (body) {
+                this.postRestuarant(body)
+                  .then(this.getRestaurants)
+                    .then(data => {
+                      this.restaurants = data.restaurants
+                    })
+              },
+
+              getRestaurants: function () {
+                return fetch('/api/restaurants')
+                .then(resp => resp.json())
+              },
+
+              postRestuarant: function (body) {
+                  return fetch('/api/restaurants', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // weee
+                    body: JSON.stringify(body)
+                  })
+                  .then(resp => resp.json())
+              }
             },
 
             created: function created () {
-              fetch('/api/restaurants')
-                .then(resp => resp.json())
+              this.getRestaurants()
                 .then(data => {
                   console.info(data)
                   this.restaurants = data.restaurants
+
+                  this.searchEngine = new window.Fuse(this.restaurants, {
+                    findAllMatches: true,
+                    threshold: 0.5,
+                    shouldSort: true,
+                    keys: ['tags', 'name']
+                  })
                 })
             },
 
             components: {
+              Restaurant: {
+                template: '#template-restaurant',
+                props: ['address', 'name', 'tags', 'avgRating']
+              },
+
               RestaurantForm: {
                 template: '#template-post-restaurant',
+
                 data: function () {
                   return {
                     name: '',
@@ -95,27 +174,17 @@
 
                 methods: {
                   submitRestaurant: function submitRestaurant () {
-                    const body = JSON.stringify({
+                    const body = {
                       name: this.name,
                       address: this.address,
-                      tags: this.tags
-                    })
+                      tags: this.tags && this.tags.split(',').map(t => t.trim())
+                    }
 
-                    fetch('/api/restaurants', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body
-                    })
-                      .then(resp => resp.json())
-                      .then(data => {
-                        console.info(data)
-                        this.name = ''
-                        this.address = ''
-                        this.tags = []
-                      })
-                      .catch(err => {
-                        console.error('err')
-                      })
+                    this.$emit('submit-restaurant', body)
+
+                    this.name = ''
+                    this.address = ''
+                    this.tags = []
                   }
                 }
               }
