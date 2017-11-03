@@ -12,6 +12,8 @@ function Restaurant (opts) {
   // 1..5
   this.ratings = opts.ratings || []
 
+  this.uploader = opts.uploader
+
   Object.defineProperty(this, 'avgRating', {
     get: function () {
       return Math.floor(

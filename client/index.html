@@ -25,8 +25,19 @@
           .controlGroup { margin-top: 8px; }
           .restaurantsApp { padding: 24px 8px 16px 8px; }
           .restaurantForm { padding: 12px; }
+          .restaurant-name { display: inline-block; }
           .restaurant { margin-top: 16px; }
           .tagSearch { margin-top: 16px; border: 0; }
+          .c-modal {
+            padding: 24px; position: fixed;
+            width: 400px;
+            max-width: 100%;
+            top: 40px; left: 50%; transform: translateX(-50%);
+            box-shadow: 0px 0px 8px 1.5px rgba(0, 0, 0, 0.3);
+            transition: top 290ms ease;
+          }
+          .trans-modal-enter { top: -100px; }
+          .trans-modal-leave { top: -100px; }
           .fud { color: rgba(245, 242, 242, 0.4); font-size: 128px; position: fixed; top: 12px; left: 32px; pointer-events: none; }
         </style>
     </head>
@@ -45,6 +56,13 @@
         <script id="template-app-root" type="text/x-template">
           <div class="restaurantsApp">
 
+            <modal class="c-card c-modal" v-if="showAuth" @done="showAuth = false; submitSecret()">
+              <div>
+                <label> Secret </label>
+                <input type="text" v-model="secret" placholder="secret word" />
+              </div>
+            </modal>
+
             <restaurant-form class="c-card u-center"
               @submit-restaurant="doSubmit">
             </restaurant-form>
@@ -53,6 +71,8 @@
 
             <div class="restaurants"  v-if="filtered.length">
               <restaurant v-for="res in filtered"
+                @favorited="toggleFav(res.id)"
+                :fav="favorites.some(f => f === res.id)"
                 :address="res.address"
                 :tags="res.tags"
                 :name="res.name"
@@ -64,9 +84,20 @@
           </div>
         </script>
 
+        <script id="template-modal" type="text/x-template">
+          <transition name="trans-modal">
+            <div>
+                <slot></slot>
+                <button @click="$emit('done')">Bark</button>
+            </div>
+          </transition>
+        </script>
+
         <script id="template-restaurant" type="text/x-template">
             <div class="restaurant u-center c-card">
+              <span class="restaurant-fav" @click="$emit('favorited')">{{ fav ? 'fav' : 'nok' }} </span>
               <h3 class="restaurant-name">{{ name }}</h3>
+
               <p class="restaurant-address">{{ address }}</p>
               <p class="restaurant-tags">{{ tags }}</p>
               <p class="restaurant-tags">{{ avgRating }}</p>
@@ -103,9 +134,12 @@
             template: '#template-app-root',
 
             data: {
+              showAuth: false,
+              favorites: [],
               searchEngine: null,
               restaurants: [],
-              searchTerm: ''
+              searchTerm: '',
+              secret: ''
             },
 
             computed: {
@@ -115,32 +149,128 @@
                   : this.searchEngine.search(this.searchTerm)
               }
             },
+
             methods: {
+              fetchFactory: function (type = 'GET') {
+                const GET = {
+                  credentials: 'same-origin',
+                }
+
+                const POST = {
+                  method: 'POST',
+                  credentials: 'same-origin',
+                  headers: { 'Content-Type': 'application/json' },
+                }
+
+                switch (type.toLowerCase()) {
+                  case 'get': return GET; break;
+                  case 'post': return POST; break;
+                  default: return GET; 
+                }
+
+              },
+
+              handleNok: function (resp) {
+                if (resp.status === 403) {
+                  console.warn('auth please')
+                  this.showAuth = true
+
+                } else if (resp.status === 401) {
+                  console.warn('bad secret ok')
+                }
+
+                else return resp
+              },
+
+              procResp: function (resp) {
+                return resp.json().then(data => {
+                  return {
+                    ok: resp.ok,
+                    status: resp.status,
+                    data
+                  }
+                })
+              },
+
+              toggleFav: function (rid) {
+                return fetch('/api/favs', {
+                  ...this.fetchFactory('POST'),
+                  body: JSON.stringify({ restaurantId: rid })
+                })
+                .then(this.handleNok)
+                .then(this.procResp)
+                .then(this.getRestaurants)
+                .then(data => {
+                  this.restaurants = data.restaurants
+                  return this.getFavs()
+                })
+                .then(data => {
+                  this.favorites = data.favorites
+                })
+              },
+
+              submitSecret: function () {
+                let secret = this.secret
+                this.secret = ''
+
+                fetch('/api/secret', {
+                  ...this.fetchFactory('POST'),
+                  body: JSON.stringify({ secret })
+                })
+                .then(this.procResp)
+                .then(data => {
+
+                })
+                .catch(this.handleNok)
+              },
+
               doSubmit: function (body) {
                 this.postRestuarant(body)
                   .then(this.getRestaurants)
-                    .then(data => {
-                      this.restaurants = data.restaurants
-                    })
+                  .then(data => {
+                    this.restaurants = data.restaurants
+                  })
+                  .catch(this.handleNok)
               },
 
               getRestaurants: function () {
-                return fetch('/api/restaurants')
-                .then(resp => resp.json())
+                return fetch('/api/restaurants', this.fetchFactory())
+                  .then(this.procResp)
+                  .then(resp => {
+                    return resp.data
+                  })
               },
 
               postRestuarant: function (body) {
                   return fetch('/api/restaurants', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    ...this.fetchFactory('POST'),
                     // weee
                     body: JSON.stringify(body)
                   })
-                  .then(resp => resp.json())
+                  .then(this.procResp)
+                  .then(resp => {
+                      if (!resp.ok) {
+                        throw resp
+                      } else {
+                        return resp.data
+                      }
+                  })
+              },
+
+              getFavs: function () {
+                return fetch('/api/favs', this.fetchFactory())
+                  .then(this.procResp)
+                  .then(this.handleNok)
+                  .then(resp => resp.data)
               }
             },
 
             created: function created () {
+              this.getFavs()
+                .then(data => {
+                  this.favorites = data.favorites
+                })
+
               this.getRestaurants()
                 .then(data => {
                   console.info(data)
@@ -156,9 +286,18 @@
             },
 
             components: {
+              Modal: {
+                template: '#template-modal',
+                methods: {
+                  close: function () {
+                    this.$emit('done')
+                  }
+                }
+              },
+
               Restaurant: {
                 template: '#template-restaurant',
-                props: ['address', 'name', 'tags', 'avgRating']
+                props: ['address', 'name', 'tags', 'avgRating', 'fav']
               },
 
               RestaurantForm: {
