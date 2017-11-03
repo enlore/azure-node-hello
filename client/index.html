@@ -19,6 +19,7 @@
           input { width: 100%;  max-width: 100%; border: 0; border-bottom: 1px solid #f4f2f2; }
           label + input { margin-top: 6px; }
           button { border: 0; border-bottom: 1px solid lightgrey; display: inline-block; padding: 6px 12px; }
+          h1, h2, h3 { margin: 12px 0 0 0; line-height: 1.4; }
           .t-center { text-align: center; }
           .u-center { margin: 0 auto; display: block; }
           .c-card { max-width: 600px; padding: 8px; border-radius: 2px; background-color: #fff; box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);}
@@ -26,6 +27,7 @@
           .restaurantsApp { padding: 24px 8px 16px 8px; }
           .restaurantForm { padding: 12px; }
           .restaurant-name { display: inline-block; }
+          .restaurant-fav { cursor: pointer; }
           .restaurant { margin-top: 16px; }
           .tagSearch { margin-top: 16px; border: 0; }
           .c-modal {
@@ -177,6 +179,7 @@
 
                 } else if (resp.status === 401) {
                   console.warn('bad secret ok')
+                  this.showAuth = true
                 }
 
                 else return resp
@@ -190,6 +193,13 @@
                     data
                   }
                 })
+              },
+
+              getFavs: function () {
+                return fetch('/api/favs', this.fetchFactory())
+                  .then(this.procResp)
+                  .then(this.handleNok)
+                  .then(resp => resp.data)
               },
 
               toggleFav: function (rid) {
@@ -255,13 +265,6 @@
                         return resp.data
                       }
                   })
-              },
-
-              getFavs: function () {
-                return fetch('/api/favs', this.fetchFactory())
-                  .then(this.procResp)
-                  .then(this.handleNok)
-                  .then(resp => resp.data)
               }
             },
 
